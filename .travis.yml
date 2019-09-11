@@ -2,10 +2,6 @@ language: java
 sudo: false
 install: true
 
-addons:
-  sonarcloud:
-    organization: "lequal"
-
 jdk:
 - openjdk8
 - openjdk11
@@ -33,5 +29,4 @@ deploy:
   name: "i-Code CNES"
   draft: true
   on:
-    tags: true
     jdk: openjdk11
