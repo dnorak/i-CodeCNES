@@ -20,8 +20,10 @@ import java.util.Map;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
+import java.nio.file.Paths;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.tools.ant.DirectoryScanner;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
@@ -42,7 +44,7 @@ import fr.cnes.icode.application.exception.BadArgumentValueException;
  * @author lequal
  */
 public class ICodeApplication implements IApplication {
-	
+
 	/**
 	 * Logger for the current class @see /logging.properties for more information.
 	 */
@@ -68,7 +70,7 @@ public class ICodeApplication implements IApplication {
 	 * Contains language's name as key and language's id as key.
 	 */
 	private Map<String,String> languages;
-	
+
 	/**
 	 * Manage the parsing and formatting of data provided by cli.
 	 */
@@ -78,48 +80,48 @@ public class ICodeApplication implements IApplication {
 	 * Needed services for running i-Code.
 	 */
 	private ExportService exportService;
-	
+
 	/**
 	 * Set an analyzer.
 	 */
 	private Analyzer analyzer;
-	
+
 	/**
 	 * List of language id (not name).
 	 */
 	private List<String> checkedLanguages;
-	
+
 	/**
 	 * List of rule id.
 	 */
 	private List<String> excludedRules;
-	
+
 	/**
 	 * Format of the export (xml by default).
 	 */
 	private String exportFormat;
-	
+
 	/**
 	 * File where write results (a temp file is created by default).
 	 */
 	private File outputFile;
-	
+
 	/**
 	 * Boolean true if output is the console.
 	 */
 	private boolean outputToStdOut;
-		
+
 	/**
 	 * Default constructor to set available languages data.
 	 */
 	public ICodeApplication() {
 		super();
-		
+
 		// Initialize services.
 		cli = new CommandLineManager();
 		exportService = new ExportService();
 		analyzer = new Analyzer();
-		
+
 		// Analysis parameters with default values
 		languages = new HashMap<>();
 		checkedLanguages = LanguageService.getLanguagesIds();
@@ -135,7 +137,7 @@ public class ICodeApplication implements IApplication {
 		}
 		// by default results are printed to screen
 		outputToStdOut = true;
-		
+
 		// build map for translating languages' name to id
 		for(final LanguageContainer container : LanguageService.getLanguages()) {
 			languages.put(container.getName(), container.getId());
@@ -156,17 +158,17 @@ public class ICodeApplication implements IApplication {
 			final String [] args = (String[]) pContext.getArguments().get(IApplicationContext.APPLICATION_ARGS);
 			// Parse the command line arguments.
 			cli.parse(args);
-	
+
 			// Get list of filenames.
 			final List<String> arguments = cli.getArgs();
 			final String[] filenames = arguments.toArray(new String[arguments.size()]);
-			
+
 			// Get list of files to analyze.
 			final List<File> sources = getFiles(filenames);
-			
+
 			// Export parameters.
 			Map<String, String> exporterParameters;
-			
+
 			// Handle options.
 			if(cli.hasOption(CommandLineManager.EXPORTERS)) {
 				// display all available exporters
@@ -185,16 +187,16 @@ public class ICodeApplication implements IApplication {
 			} else if(cli.hasOption(CommandLineManager.LIST_EXPORT_PARAMETERS)) {
 				// Get format as value of the option.
 				exportFormat = cli.getOptionValue(CommandLineManager.LIST_EXPORT_PARAMETERS);
-				
+
 				if(exportService.getAvailableFormats().containsValue(exportFormat)) {				
 					// Get default parameters for the chosen export.
 					exporterParameters = exportService.getParameters(exportFormat);
-					
+
 					// Security in the case of a null return.
 					if(exporterParameters==null) {
 						exporterParameters = new HashMap<>();
 					}
-		
+
 					// display all available languages
 					displayList(exporterParameters.keySet(), 
 							String.format("List of available parameters for %s export:", exportFormat));
@@ -228,7 +230,7 @@ public class ICodeApplication implements IApplication {
 							CheckerContainer checker = iterator.next();
 							found = checker.getId().equals(rule);
 						}
-						
+
 						// if the rule does not exist, just warn the user
 						if(!found) {
 							String message = String.format("Rule '%s' is not available in i-Code.", rule);
@@ -251,17 +253,17 @@ public class ICodeApplication implements IApplication {
 					outputFile = new File(cli.getOptionValue(CommandLineManager.OUTPUT));
 					outputToStdOut = false;
 				}
-				
+
 				// Run the analysis.
 				final List<CheckResult> checkResults = analyzer.check(sources, checkedLanguages, excludedRules);
 				// Get default parameters for the chosen export.
 				exporterParameters = exportService.getParameters(exportFormat);
-				
+
 				// Add user parameters if there are some.
 				if(cli.hasOption(CommandLineManager.EXPORT_PARAMETERS)) {
 					// Split all pairs of key=value.
 					final String[] params = cli.getOptionValue(CommandLineManager.EXPORT_PARAMETERS).split(",");
-					
+
 					// For each key=value.
 					for(final String param : params) {
 						// Split key from the value.
@@ -282,27 +284,27 @@ public class ICodeApplication implements IApplication {
 						}
 					}
 				}
-				
+
 				// Export results to a file.
 				exportService.export(checkResults, outputFile, exporterParameters, exportFormat);
-				
+
 				// Display data to standard output if no file is asked by the user.
 				if(outputToStdOut) {
 					try (BufferedReader br = new BufferedReader(new FileReader(outputFile))) {
-					   String line = null;
-					   while ((line = br.readLine()) != null) {
-					       LOGGER.info(line);
-					   }
+						String line = null;
+						while ((line = br.readLine()) != null) {
+							LOGGER.info(line);
+						}
 					}
 				}
 			}
 		} catch(BadArgumentValueException e) {
 			LOGGER.severe(e.getMessage());
 		}
-		
+
 		return EXIT_OK;
 	}
-	
+
 	/**
 	 * Print a formatted list to the log output with an optional header.
 	 * 
@@ -314,7 +316,7 @@ public class ICodeApplication implements IApplication {
 		if(header!=null && !header.isEmpty()) {
 			LOGGER.info(header);
 		}
-		
+
 		// print each line of a list
 		if(list!=null) {
 			for(final String item : list) {
@@ -329,37 +331,50 @@ public class ICodeApplication implements IApplication {
 	 * @param pFilenames Array containing path of researched files.
 	 * @return List of found files.
 	 */
-    private List<File> getFiles(String[] pFilenames) {
-    	// List of files found (to be returned)
-        final List<File> result = new ArrayList<>();
-        // Object used to browse directories and find files with shell regex
-        final DirectoryScanner scanner = new DirectoryScanner();
-        // Temp object for file opening 
-        File file = null;
-        
-        // Add user inputs as scope for research
-        scanner.setIncludes(pFilenames);
-        // Research must be case sensitive
-        scanner.setCaseSensitive(true);
-        // Set base directory as the current directory
-        scanner.setBasedir(new File("."));
+	private List<File> getFiles(String[] pFilenames) {
+		// List of files found (to be returned)
+		final List<File> result = new ArrayList<>();
 
-        // Scan for files
-        scanner.scan();
+		// Add user inputs as scope for research
+		for(String filename: pFilenames)
+		{
+			// Object used to browse directories and find files with shell regex
+			final DirectoryScanner scanner = new DirectoryScanner();
+			// Temp object for file opening 
+			File file = null;
 
-        // Open found files
-        for (String name : scanner.getIncludedFiles()) {
-            file = new File(name);
-            if (!file.exists()) {
-            	LOGGER.warning(String.format("File not found: %s", name));
-        	} else {
-                result.add(file);
-        	}
-        }
+			String pathPart = FilenameUtils.getFullPath(filename);
 
-        return result;
+			if(pathPart.isEmpty())
+			{
+				// Set base directory as the current directory
+				scanner.setBasedir(Paths.get(".").toAbsolutePath().normalize().toFile());
+				scanner.setIncludes(new String[]{filename});
+			}
+			else
+			{
+				scanner.setBasedir(pathPart);
+				scanner.setIncludes(new String[]{FilenameUtils.getName(filename)});
+			}
 
-    }
+
+			// Scan for files
+			scanner.scan();
+
+			// Open found files
+			for (String name : scanner.getIncludedFiles()) {
+				file = new File(scanner.getBasedir(),name);
+				if (!file.exists()) {
+					LOGGER.warning(String.format("File not found: %s", name));
+				} else {
+					result.add(file);
+				}
+			}
+		}
+
+		return result;
+
+	}
 
 	/**
 	 * Method executed after the end of the main program.

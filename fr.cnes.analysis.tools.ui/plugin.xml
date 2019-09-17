@@ -252,7 +252,7 @@
             class="fr.cnes.analysis.tools.ui.editors.EditorShell"
             contributorClass="org.eclipse.ui.texteditor.BasicTextEditorActionContributor"
             default="false"
-            extensions="sh,ksh"
+            extensions="sh,ksh,shl,bsh,bash"
             icon="icons/shell.png"
             id="fr.cnes.analysis.tools.ui.editors.EditorShell"
             name="Shell editor">

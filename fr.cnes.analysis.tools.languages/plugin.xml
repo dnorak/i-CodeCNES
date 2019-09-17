@@ -53,6 +53,13 @@
          <fileExtension
                name="ksh">
          </fileExtension>
+         <fileExtension
+               name="shl">
+         </fileExtension>
+         <fileExtension
+               name="bsh">
+         </fileExtension>
+ 
       </language>
    </extension>
 </plugin>
